@@ -4,6 +4,9 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# No tests
+export DEB_BUILD_OPTIONS := $(DEB_BUILD_OPTIONS) nocheck
+
 DEBIAN_VERSION := $(shell dpkg-parsechangelog | sed -rne "s,^Version: (.*),\1,p")
 DEBIAN_REVISION := $(shell dpkg-parsechangelog | sed -rne "s,^Version: ([0-9.]+)(~|-)(.*),\3,p")
 UPSTREAM_VERSION := $(shell dpkg-parsechangelog | sed -rne "s,^Version: ([0-9.]+)(~|-)(.*),\1,p")
@@ -18,3 +21,10 @@ override_dh_auto_test:
 # FIXME: LLVM_DEFINITIONS is broken somehow in LLVM cmake upstream
 override_dh_auto_configure:
 	dh_auto_configure -- -DREVISION_LAST=$(UPSTREAM_VERSION) -DREVISION=$(UPSTREAM_VERSION) -DLLVM_DEFINITIONS="-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS" -DPYTHON_CMD="python3"
+
+override_dh_dwz:
+	@echo "Skipping dh_dwz (dwz 0.15 fails on .debug_addr)"
+
+override_dh_python3:
+	# See Debian Bug #926187
+	dh_python3 --shebang=/usr/bin/python3
