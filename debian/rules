@@ -22,6 +22,36 @@ override_dh_auto_test:
 override_dh_auto_configure:
 	dh_auto_configure -- -DREVISION_LAST=$(UPSTREAM_VERSION) -DREVISION=$(UPSTREAM_VERSION) -DLLVM_DEFINITIONS="-D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS" -DPYTHON_CMD="python3"
 
+override_dh_auto_install:
+	dh_auto_install
+
+	# Move doc directory out so its files don't get installed to /usr/sbin
+	if [ -d $(CURDIR)/debian/tmp/usr/share/bcc/tools/doc ]; then \
+		mkdir -p $(CURDIR)/debian/tmp/usr/share/bcc/doc/ ; \
+		mv $(CURDIR)/debian/tmp/usr/share/bcc/tools/doc/* \
+			$(CURDIR)/debian/tmp/usr/share/bcc/doc/ ; \
+		rm -d $(CURDIR)/debian/tmp/usr/share/bcc/tools/doc ; \
+	fi
+
+	for eachFile in $(CURDIR)/debian/tmp/usr/share/bcc/tools/* ; do \
+		test -f  $$eachFile && mv $$eachFile $$eachFile-bpfcc ; \
+	done
+
+	# Don't rename the C file to different name and move it to
+	# /usr/share/bpfcc-tools/
+	mkdir -p $(CURDIR)/debian/bpfcc-tools/usr/share/bpfcc-tools/
+	mv $(CURDIR)/debian/tmp/usr/share/bcc/tools/deadlock.c-bpfcc \
+		$(CURDIR)/debian/bpfcc-tools/usr/share/bpfcc-tools/deadlock.c ; \
+	mv $(CURDIR)/debian/tmp/usr/share/bcc/tools/netqtop.c-bpfcc \
+		$(CURDIR)/debian/bpfcc-tools/usr/share/bpfcc-tools/netqtop.c ; \
+
+	# Some binaries end up in wrong paths like /usr/sbin/lib/
+	# This fixes those
+	test -d $(CURDIR)/debian/tmp/usr/share/bcc/tools/lib/ && \
+		mv $(CURDIR)/debian/tmp/usr/share/bcc/tools/lib/* \
+		$(CURDIR)/debian/tmp/usr/share/bcc/tools/ && \
+		rm -rf $(CURDIR)/debian/tmp/usr/share/bcc/tools/lib/
+
 override_dh_dwz:
 	@echo "Skipping dh_dwz (dwz 0.15 fails on .debug_addr)"
 
